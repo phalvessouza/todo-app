@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Task } from './task.model';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -8,6 +8,9 @@ export class TasksService {
     private tasks: Task[] = [];
 
     getAllTasks(): Task[] {
+        if (this.tasks.length === 0) {
+            throw new NotFoundException('Nenhuma task encontrada');
+        }
         return this.tasks;
     }
 
