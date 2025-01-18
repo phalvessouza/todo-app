@@ -1,76 +1,61 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
-import { Task } from './task.model';
-import { v4 as uuidv4 } from 'uuid';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 
 @Injectable()
 export class TasksService {
-    private tasks: Task[] = [];
+    constructor(
+        @InjectRepository(Task)
+        private tasksRepository: Repository<Task>,
+    ) { }
 
-    getAllTasks(): Task[] {
-        if (this.tasks.length === 0) {
-            throw new NotFoundException('Nenhuma task encontrada');
+    async getAllTasks(): Promise<Task[]> {
+        const tasks = await this.tasksRepository.find();
+        if (tasks.length === 0) {
+            throw new NotFoundException('No tasks found');
         }
-        return this.tasks;
+        return tasks;
     }
 
-    getTaskById(id: string): Task {
-        const task = this.tasks.find(task => task.id === id);
+    async getTaskById(id: string): Promise<Task> {
+        const task = await this.tasksRepository.findOne({ where: { id } });
         if (!task) {
             throw new NotFoundException(`Task with ID "${id}" not found`);
         }
         return task;
     }
 
-    createTask(createTaskDto: CreateTaskDto): Task {
+    async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
         const { title, description } = createTaskDto;
-        const task: Task = {
-            id: uuidv4(),
+        const task = this.tasksRepository.create({
             title,
             description,
             done: false,
-        };
-        this.tasks.push(task);
-
-        // Verifica se a tarefa foi adicionada com sucesso
-        const createdTask = this.tasks.find(t => t.id === task.id);
-        if (!createdTask) {
+        });
+        const savedTask = await this.tasksRepository.save(task);
+        if (!savedTask) {
             throw new InternalServerErrorException('Failed to create task');
         }
-
-        return task;
+        return savedTask;
     }
 
-    updateTask(id: string, updatedTask: Partial<Task>): Task {
-        let task = this.getTaskById(id);
+    async updateTask(id: string, updatedTask: Partial<Task>): Promise<Task> {
+        const task = await this.getTaskById(id);
         if (!task) {
             throw new NotFoundException(`Task with ID "${id}" not found`);
         }
-
-        task = { ...task, ...updatedTask };
-        this.tasks = this.tasks.map(t => (t.id === id ? task : t));
-
-        // Verifica se a tarefa foi atualizada com sucesso
-        const updated = this.tasks.find(t => t.id === id && t !== task);
-        if (updated) {
-            throw new InternalServerErrorException('Failed to update task');
-        }
-
+        Object.assign(task, updatedTask);
+        await this.tasksRepository.save(task);
         return task;
     }
 
-    deleteTask(id: string): void {
-        const initialLength = this.tasks.length;
-        this.tasks = this.tasks.filter(task => task.id !== id);
-
-        // Verifica se a tarefa foi deletada com sucesso
-        if (this.tasks.length === initialLength) {
+    async deleteTask(id: string): Promise<void> {
+        const result = await this.tasksRepository.delete(id);
+        if (result.affected === 0) {
             throw new NotFoundException(`Task with ID "${id}" not found`);
         }
-
-        const deletedTask = this.tasks.find(task => task.id === id);
-        if (deletedTask) {
-            throw new InternalServerErrorException('Failed to delete task');
-        }
+        return;
     }
 }
