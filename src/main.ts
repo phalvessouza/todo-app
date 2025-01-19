@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { HttpExceptionFilter } from 'src/common/filters/http-exception.filter'
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
+require('dotenv').config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,10 +18,14 @@ async function bootstrap() {
     .setTitle('Todo API')
     .setDescription('The Todo API description')
     .setVersion('1.0')
+    .addServer('http://localhost:3000/', 'Local environment')
+    .addServer('https://staging.yourapi.com/', 'Staging')
+    .addServer('https://production.yourapi.com/', 'Production')
+    .addTag('Your API Tag')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
+  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
