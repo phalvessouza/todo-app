@@ -3,9 +3,11 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
+import { LoggingInterceptor } from './logging/logging.interceptor';
 require('dotenv').config();
 
 async function bootstrap() {
+  // Inicializar a aplicação
   const app = await NestFactory.create(AppModule);
 
   // Aplicar o filtro global de exceções
@@ -14,6 +16,10 @@ async function bootstrap() {
   // Aplicar a validação globalmente
   app.useGlobalPipes(new ValidationPipe());
 
+  // Aplicar o interceptor globalmente
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
+  // Configuração do Swagger
   const config = new DocumentBuilder()
     .setTitle('Todo API')
     .setDescription('The Todo API description')
@@ -24,6 +30,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
+  // Iniciar a aplicação
   await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
