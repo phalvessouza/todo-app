@@ -3,12 +3,15 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
-import { LoggingInterceptor } from './logging/logging.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 require('dotenv').config();
 
 async function bootstrap() {
   // Inicializar a aplicação
   const app = await NestFactory.create(AppModule);
+
+  // Habilitar o CORS
+  app.enableCors();
 
   // Aplicar o filtro global de exceções
   app.useGlobalFilters(new HttpExceptionFilter());
