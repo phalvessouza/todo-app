@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -22,6 +24,17 @@ import { TasksModule } from './modules/tasks/tasks.module';
         synchronize: true,
       }),
       inject: [ConfigService],
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      serveStaticOptions: {
+        setHeaders: (res, path, stat) => {
+          res.set('Content-Security-Policy', "default-src 'self'");
+          res.set('X-Content-Type-Options', 'nosniff');
+          res.set('X-Frame-Options', 'DENY');
+          res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        },
+      },
     }),
     TasksModule,
   ],
